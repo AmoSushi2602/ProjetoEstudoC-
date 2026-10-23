@@ -1,3 +1,7 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
 class Produto
 {
     public int Codigo { get; set; }
@@ -18,6 +22,52 @@ class Produto
 class Program
 {
     //Métodos
+
+    static void Saudacoes()
+    {
+        Console.WriteLine("Bem vindo ao sistema");
+        Console.WriteLine("Aqui você vai cadastrar os produtos da sua loja");
+        Console.WriteLine("E no final vamos te dar um resumo do que foi cadastrado");
+    }
+
+
+    static int Opcoes()
+    {
+        int resposta;
+        while (true)
+        { 
+            Console.WriteLine("Escolha uma opção:");
+            Console.WriteLine("1 - Cadastrar produto");
+            Console.WriteLine("2 - Buscar Produto");
+            Console.WriteLine("3 - Listar produtos");
+            Console.WriteLine("4 - Consultar resumo do estoque");
+            Console.WriteLine("0 - Sair");
+
+            bool respostaValida = int.TryParse(
+                Console.ReadLine() ?? "",
+
+
+                out resposta
+                );    
+            
+                if (!respostaValida)
+            {
+                Console.WriteLine("Escreva uma resposta Válida!");
+                continue;
+
+            }
+            if (resposta < 0 || resposta > 4)
+            {
+                Console.WriteLine("Está não e uma opção");
+                continue;
+            }
+
+                
+            return(resposta);
+        }
+    }
+
+
     static string LerRespostaCadastro()
     {
         while (true)
@@ -33,12 +83,6 @@ class Program
         }
     }
 
-    static void Saudacoes()
-    {
-        Console.WriteLine("Bem vindo ao cadastro de produtos");
-        Console.WriteLine("Aqui você vai cadastrar os produtos da sua loja");
-        Console.WriteLine("E no final vamos te dar um resumo do que foi cadastrado");
-    }
 
     static void MostrarProdutos(Produto produto)
     {
@@ -47,6 +91,7 @@ class Program
         Console.WriteLine($"Preço: {produto.Preco:F2}");
         Console.WriteLine($"Estoque: {produto.Estoque}");
     }
+
     static decimal ValorProduto(Produto produto)
     {
         return produto.Preco * produto.Estoque;
@@ -63,6 +108,19 @@ class Program
         return valorTotalEstoque;
     }
 
+    static Produto? BuscarProduto (List<Produto> produtos, int codigo)
+    {
+        foreach (Produto item in produtos)
+        {
+            if (item.Codigo == codigo)
+            {
+                return item;
+            }
+        }
+        return null;
+    }
+
+
     //Método principal ----------------------------------------
     static void Main(string[] args)
     {
@@ -70,134 +128,196 @@ class Program
 
         List<Produto> produtos = new List<Produto>();
 
-        string resposta = LerRespostaCadastro();
+        int opcao = Opcoes();
 
-        while (resposta == "S")
-        {
-            int codigo; //Declara a variavel fora do loop para poder usar depois
-            while (true)
+
+    while(opcao != 0) {
+
+            //Loop de cadastro
+            if (opcao == 1)
             {
-                Console.WriteLine("Qual o codigo do Produto");
-                bool codigoValido = int.TryParse(
-                    Console.ReadLine(),
-                    out codigo //retira o int para nao tentar criar uma var 2 vezes
-                 );
-
-                if (!codigoValido)
+                int codigo; //Declara a variavel fora do loop para poder usar depois
+                while (true)
                 {
-                    Console.WriteLine("Escreve um numero zé");
-                    continue;
+                    Console.WriteLine("Qual o codigo do Produto");
+                    bool codigoValido = int.TryParse(
+                        Console.ReadLine(),
+                        out codigo //retira o int para nao tentar criar uma var 2 vezes
+                     );
+
+                    if (!codigoValido)
+                    {
+                        Console.WriteLine("Escreve um numero zé");
+                        continue;
+                    }
+
+                    if (codigo <= 0)
+                    {
+                        Console.WriteLine("O nuemero deve ser positivo");
+                        continue;
+                    }
+
+                    if (produtos.Any(p => p.Codigo == codigo))
+                    {
+                        Console.WriteLine("Já exite este código de produto zé");
+                        continue;
+                    }
+                    break;
+                }
+                string nome; //Declara a variavel fora do loop para poder usar depois
+                while (true)
+                {
+                    Console.WriteLine("Qual o nome:");
+                    nome = Console.ReadLine() ?? "";
+                    if (string.IsNullOrWhiteSpace(nome))
+                    {
+                        Console.WriteLine("Escreve um nome né");
+                        continue;
+                    }
+                    break;
+
+                }
+                decimal preco; //Declara a variavel fora do loop para poder usar depois
+                while (true)
+                {
+                    Console.WriteLine("Qual o preço:");
+                    bool conversaoValida = decimal.TryParse(
+                        Console.ReadLine(),
+                        out preco);
+                    if (conversaoValida == false)
+                    {
+                        Console.WriteLine("Escreve um numero né");
+                        continue;
+                    }
+
+
+                    if (preco <= 0)
+                    {
+                        Console.WriteLine("Vai entregar de graça?");
+                        continue;
+                    }
+                    break;
                 }
 
-                if (codigo <= 0)
+                int estoque; //Declara a variavel fora do loop para poder usar depois
+                while (true)
                 {
-                    Console.WriteLine("O nuemero deve ser positivo");
-                    continue;
-                }
+                    Console.WriteLine("Quanto tem em estoque? ");
+                    bool estoqueValido = int.TryParse(Console.ReadLine(),
+                        out estoque
+                        );
+                    if (!estoqueValido)
+                    {
+                        Console.WriteLine("Escreve um numero zé");
+                        continue;
+                    }
 
-                if (produtos.Any(p => p.Codigo == codigo))
-                {
-                    Console.WriteLine("Já exite este código de produto zé");
-                    continue;
+                    if (estoque < 0)
+                    {
+                        Console.WriteLine("Negativo nao doido");
+                        continue;
+                    }
+                    break;
                 }
-                break;
+                Produto produto = new Produto(codigo, nome, preco, estoque);
+
+                produtos.Add(produto);
+
+                Console.WriteLine("Criado com sucesso!");
+
             }
-            string nome; //Declara a variavel fora do loop para poder usar depois
-            while (true)
+
+            // busca de produto
+            else if (opcao == 2)
             {
-                Console.WriteLine("Qual o nome:");
-                nome = Console.ReadLine() ?? "";
-                if (string.IsNullOrWhiteSpace(nome))
+                if (produtos.Count <= 0)
                 {
-                    Console.WriteLine("Escreve um nome né");
-                    continue;
-                }
-                break;
+                    Console.WriteLine("Não tem produtos para buscar");
 
-            }
-            decimal preco; //Declara a variavel fora do loop para poder usar depois
-            while (true)
-            {
-                Console.WriteLine("Qual o preço:");
-                bool conversaoValida = decimal.TryParse(
-                    Console.ReadLine(),
-                    out preco);
-                if (conversaoValida == false)
+                }
+                else
                 {
-                    Console.WriteLine("Escreve um numero né");
-                    continue;
-                }
 
+                    Console.WriteLine("Digite o código do produto que deseja buscar: ");
 
-                if (preco <= 0)
-                {
-                    Console.WriteLine("Vai entregar de graça?");
-                    continue;
-                }
-                break;
-            }
-
-            int estoque; //Declara a variavel fora do loop para poder usar depois
-            while (true)
-            {
-                Console.WriteLine("Quanto tem em estoque? ");
-                bool estoqueValido = int.TryParse(Console.ReadLine(),
-                    out estoque
+                    bool codigoValido = int.TryParse(
+                        Console.ReadLine(),
+                        out int codigoBusca
                     );
-                if (!estoqueValido)
-                {
-                    Console.WriteLine("Escreve um numero zé");
-                    continue;
+
+                    if (codigoValido)
+                    {
+                        Produto? encontrado = BuscarProduto(produtos, codigoBusca);
+
+                        if (encontrado != null)
+                        {
+                            Console.WriteLine("Produto encontrado!");
+                            MostrarProdutos(encontrado);
+                        }
+                        else
+                        {
+                            Console.WriteLine("Produto não encontrado");
+
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine("Código invalido");
+                    }
                 }
+            }
 
-                if (estoque < 0)
+            //listar produtos
+            else if (opcao == 3)
+            {
+                if (produtos.Count <= 0)
                 {
-                    Console.WriteLine("Negativo nao doido");
-                    continue;
+                    Console.WriteLine("Não tem produtos");
                 }
-                break;
+                else
+                {
+                    Console.WriteLine("Dados dos seus produtos:");
+
+                    foreach (Produto item in produtos)
+                    {
+                        MostrarProdutos(item);
+                    }
+
+                }
             }
-            Produto produto = new Produto(codigo, nome, preco, estoque);
 
-            produtos.Add(produto);
-
-            Console.WriteLine("Criado com sucesso!");
-
-            decimal valorEstoque = ValorProduto(produto);
-
-            Console.WriteLine("Dados do seu produto:");
-            MostrarProdutos(produto);
-
-            if (produto.Estoque == 0)
+            //Resumo do cadastro
+            else if (opcao == 4)
             {
-                Console.WriteLine("O estoque ta zerado");
-            }
-            else if (produto.Estoque < 5)
-            {
-                Console.WriteLine("O estoque ta baixo mano");
-            }
-            else
-            {
-                Console.WriteLine("Pode vender suave");
-            }
+                if (produtos.Count <= 0)
+                {
+                    Console.WriteLine("Não tem produtos cadastrados");
+                }
+                else
+                {
+                    Console.WriteLine($"O total de produtos cadastrados foi {produtos.Count}");
 
-            resposta = LerRespostaCadastro();
+                    int produtosComEstoqueBaixo = produtos.Count(p => p.Estoque > 0 && p.Estoque < 5);
+
+                    Console.WriteLine($"Produtos com estoque baixo: {produtosComEstoqueBaixo}! ");
+
+                    decimal valorTotalEstoque = ValorTotalEstoque(produtos);
+
+                    Console.WriteLine//Retorna o valor total do estoque
+                    (
+                        $"O valor total do estoque é de R$ {valorTotalEstoque:F2}"
+                    );
+
+                    foreach (Produto item in produtos)
+                    {
+                        MostrarProdutos(item);
+                    }
+                }
+            }
+        
+            //retorna menu 
+            opcao = Opcoes();
         }
-
-        Console.WriteLine($"O total de produtos cadastrados foi {produtos.Count}");
-        int produtosComEstoqueBaixo = produtos.Count(p => p.Estoque > 0 && p.Estoque < 5);
-        Console.WriteLine($"Produtos com estoque baixo: {produtosComEstoqueBaixo}! ");
-
-        decimal valorTotalEstoque = ValorTotalEstoque(produtos);
-
-        Console.WriteLine(
-            $"O valor total do estoque é de R$ {valorTotalEstoque:F2}"
-        );
-
-        foreach (Produto item in produtos)
-        {
-            MostrarProdutos(item);
-        }
-
     }
 }
+
