@@ -24,7 +24,7 @@ class Program
 {
     //Métodos
 
-    static void Saudacoes()
+    static void Saudacoes() 
     {
         Console.WriteLine("Bem vindo ao sistema");
         Console.WriteLine("Aqui você vai ter o controle de saida e entrada dos produtos da sua loja");
@@ -76,7 +76,7 @@ class Program
         Console.WriteLine($"Estoque: {produto.Estoque}");
     }
 
-    static decimal ValorProduto(Produto produto)
+    static decimal ValorEstoqueProduto(Produto produto)
     {
         return produto.Preco * produto.Estoque;
     }
@@ -87,7 +87,7 @@ class Program
 
         foreach (Produto item in produtos)
         {
-            valorTotalEstoque += ValorProduto(item);
+            valorTotalEstoque += ValorEstoqueProduto(item);
         }
         return valorTotalEstoque;
     }
@@ -224,12 +224,34 @@ class Program
                 MostrarProdutos(item);
 
                 decimal valorEmEstoque = ValorProduto(item);
+>>>>>>> teste
 
                 Console.WriteLine($"Seu produto: {valorEmEstoque:f2}");
             }
 
-        }
+    //
+    static void EntradaEstoque(List<Produto> produtos)
+    {
+
+    if (produtos.Count <= 0)
+    {
+        Console.WriteLine("Não tem produtos para ser alterado!");
     }
+    else
+    {
+        while (true)
+        {
+            Console.WriteLine("Digite o código do produto que deseja alterar:");
+            bool codigoValido = int.TryParse(
+                Console.ReadLine(),
+                out int codigoBusca
+            );
+
+            if (!codigoValido)
+            {
+                Console.WriteLine("Escreva um valor valido");
+                continue;
+            }
 
     static int EntradaEstoque(Produto produto, int quantidade)
     {
