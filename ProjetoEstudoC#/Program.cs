@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.AccessControl;
 
 class Produto
 {
@@ -26,8 +27,8 @@ class Program
     static void Saudacoes()
     {
         Console.WriteLine("Bem vindo ao sistema");
-        Console.WriteLine("Aqui você vai cadastrar os produtos da sua loja");
-        Console.WriteLine("E no final vamos te dar um resumo do que foi cadastrado");
+        Console.WriteLine("Aqui você vai ter o controle de saida e entrada dos produtos da sua loja");
+        Console.WriteLine("E tirar relatorios");
     }
 
     static int Opcoes()
@@ -40,6 +41,7 @@ class Program
             Console.WriteLine("2 - Buscar Produto");
             Console.WriteLine("3 - Listar produtos");
             Console.WriteLine("4 - Consultar resumo do estoque");
+            Console.WriteLine("5 - Entrada de estoque");
             Console.WriteLine("0 - Sair");
 
             bool respostaValida = int.TryParse(
@@ -55,7 +57,7 @@ class Program
                 continue;
 
             }
-            if (resposta < 0 || resposta > 4)
+            if (resposta < 0 || resposta > 5)
             {
                 Console.WriteLine("Está não e uma opção");
                 continue;
@@ -218,10 +220,21 @@ class Program
 
             foreach (Produto item in produtos)
             {
+                
                 MostrarProdutos(item);
+
+                decimal valorEmEstoque = ValorProduto(item);
+
+                Console.WriteLine($"Seu produto: {valorEmEstoque:f2}");
             }
 
         }
+    }
+
+    static int EntradaEstoque(Produto produto, int quantidade)
+    {
+        produto.Estoque += quantidade;
+        return produto.Estoque;
     }
 
 
@@ -256,34 +269,40 @@ class Program
                     Console.WriteLine("Não tem produtos para buscar");
 
                 }
-                else
+                else 
                 {
 
-                    Console.WriteLine("Digite o código do produto que deseja buscar: ");
-
-                    bool codigoValido = int.TryParse(
-                        Console.ReadLine(),
-                        out int codigoBusca
-                    );
-
-                    if (codigoValido)
+                    while (true)
                     {
-                        Produto? encontrado = BuscarProduto(produtos, codigoBusca);
 
-                        if (encontrado != null)
+                        Console.WriteLine("Digite o código do produto que deseja buscar: ");
+
+                        bool codigoValido = int.TryParse(
+                            Console.ReadLine(),
+                            out int codigoBusca
+                        );
+
+                        if (codigoValido)
                         {
-                            Console.WriteLine("Produto encontrado!");
-                            MostrarProdutos(encontrado);
+                            Produto? encontrado = BuscarProduto(produtos, codigoBusca);
+
+                            if (encontrado != null)
+                            {
+                                Console.WriteLine("Produto encontrado!");
+                                MostrarProdutos(encontrado);
+                                break;
+                            }
+                            else
+                            {
+                                Console.WriteLine("Produto não encontrado");
+                                continue;
+                            }
                         }
                         else
                         {
-                            Console.WriteLine("Produto não encontrado");
-
+                            Console.WriteLine("Código invalido");
+                            continue;
                         }
-                    }
-                    else
-                    {
-                        Console.WriteLine("Código invalido");
                     }
                 }
             }
@@ -311,6 +330,75 @@ class Program
             else if (opcao == 4)
             {
                 ResumoCadastro(produtos);
+            }
+
+            //Entrada de Estoque
+            else if(opcao == 5) 
+            {
+                if (produtos.Count <= 0) 
+                {
+                    Console.WriteLine("Não tem produtos para ser alterado!");
+                }
+                else
+                {
+                    while (true)
+                    {
+                        Console.WriteLine("Digite o código do produto que deseja alterar:");
+                        bool codigoValido = int.TryParse(
+                            Console.ReadLine(),
+                            out int codigoBusca
+                            );
+
+                        if (codigoValido)
+                        {
+                            Produto? encontrado = BuscarProduto(produtos, codigoBusca);
+
+                            if (encontrado != null)
+                            {
+                                Console.WriteLine("Produto encontrado");
+                                MostrarProdutos(encontrado);
+
+                                while (true)
+                                {
+                                    Console.WriteLine("Quanto voce deseja somar ao estoque");
+                                    bool quantidadeValida = int.TryParse(
+                                    Console.ReadLine(),
+                                    out int quantidadeAlterada
+                                    );
+
+                                    if (quantidadeValida && quantidadeAlterada > 0)
+                                    {
+                                        int estoqueNovo = EntradaEstoque(encontrado, quantidadeAlterada);
+                                        Console.WriteLine($"O estoque nove é: {estoqueNovo}");
+                                        break;
+                                    }
+                                    else if (quantidadeAlterada <= 0)
+                                    {
+                                        Console.WriteLine("Não é possivel adicionar 0 ou negativo ao estoque");
+                                        continue;
+                                    }
+                                    
+                                    else
+                                    {
+                                        Console.WriteLine("Escreva um valor valido");
+                                    }
+                                    continue;
+                                }
+                            
+                            }
+                            else
+                            {
+                                Console.WriteLine("Produto nao encontrado");
+                                continue;
+                            }
+                        }
+                        else
+                        {
+                            Console.WriteLine("Digite um código válido");
+                            continue;
+                        }                        
+                    }
+                }
             }
 
             //retorna menu 
