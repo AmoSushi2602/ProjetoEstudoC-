@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.AccessControl;
 
 class Produto
 {
@@ -24,7 +23,7 @@ class Program
 {
     //Métodos
 
-    static void Saudacoes() 
+    static void Saudacoes()
     {
         Console.WriteLine("Bem vindo ao sistema");
         Console.WriteLine("Aqui você vai ter o controle de saida e entrada dos produtos da sua loja");
@@ -42,6 +41,7 @@ class Program
             Console.WriteLine("3 - Listar produtos");
             Console.WriteLine("4 - Consultar resumo do estoque");
             Console.WriteLine("5 - Entrada de estoque");
+            Console.WriteLine("6 - Saida de estoque");
             Console.WriteLine("0 - Sair");
 
             bool respostaValida = int.TryParse(
@@ -57,7 +57,7 @@ class Program
                 continue;
 
             }
-            if (resposta < 0 || resposta > 5)
+            if (resposta < 0 || resposta > 6)
             {
                 Console.WriteLine("Está não e uma opção");
                 continue;
@@ -220,27 +220,36 @@ class Program
 
             foreach (Produto item in produtos)
             {
-                
+
                 MostrarProdutos(item);
 
-                decimal valorEmEstoque = ValorProduto(item);
->>>>>>> teste
+                decimal valorEmEstoque = ValorEstoqueProduto(item);
+
 
                 Console.WriteLine($"Seu produto: {valorEmEstoque:f2}");
             }
+        }
+    }
 
-    //
+    static int AdicionarEntradaEstoque(Produto produto, int quantidade)
+    {
+        produto.Estoque += quantidade;
+        return produto.Estoque;
+    }
+
     static void EntradaEstoque(List<Produto> produtos)
     {
 
-    if (produtos.Count <= 0)
-    {
-        Console.WriteLine("Não tem produtos para ser alterado!");
-    }
-    else
-    {
+        if (produtos.Count <= 0)
+        {
+            Console.WriteLine("Não tem produtos para ser alterado!");
+            return;
+        }
+       
+    
         while (true)
         {
+
             Console.WriteLine("Digite o código do produto que deseja alterar:");
             bool codigoValido = int.TryParse(
                 Console.ReadLine(),
@@ -253,12 +262,117 @@ class Program
                 continue;
             }
 
-    static int EntradaEstoque(Produto produto, int quantidade)
+            Produto? encontrado = BuscarProduto(produtos, codigoBusca);
+            if (encontrado == null)
+            {
+                Console.WriteLine("Produto não encontrado");
+                continue;
+            }
+
+            Console.WriteLine("Produto encontrado:");
+            MostrarProdutos(encontrado);
+
+            while (true)
+            {
+                Console.WriteLine("Quanto deseja adicionar ao estoque?");
+                bool quantidadeValida = int.TryParse(
+                    Console.ReadLine(),
+                    out int quantidadeAlterada
+                );
+
+                if (!quantidadeValida || quantidadeAlterada <= 0)
+                {
+                    Console.WriteLine("Digite um valor inteiro maior que zero");
+                    continue;
+                }
+
+                int estoqueNovo = AdicionarEntradaEstoque(encontrado, quantidadeAlterada);
+                Console.WriteLine($"O Estoque novo é de :{estoqueNovo} ");
+                break;
+            }
+            break;
+        }
+    }
+
+    static int SubtrairSaidaEstoque(Produto produto, int quantidade)
     {
-        produto.Estoque += quantidade;
+        if (quantidade <= 0)
+        {
+            throw new ArgumentException("A quantidade da saida deve ser maior que zero");
+        }
+        if (produto.Estoque < quantidade)
+        {
+            throw new InvalidOperationException("Não pode ser feito esta operação, o estoque ficará negativo");
+        }
+        produto.Estoque -= quantidade;
         return produto.Estoque;
     }
 
+    static void SaidaEstoque(List<Produto> produtos)
+    {
+        if(produtos.Count <= 0)
+        {
+            Console.WriteLine("Não tem produtos para dar saida");
+            return;
+        }
+
+        while(true)
+        {
+            Console.WriteLine("Digite o código do produto que deseja dar saida");
+            bool codigoValido = int.TryParse(
+                Console.ReadLine(),
+                out int codigoBusca
+                );
+            if (!codigoValido)
+            {
+                Console.WriteLine("Escreva um código válido");
+                continue;
+            }
+            Produto? encontrado = BuscarProduto(produtos, codigoBusca);
+            if(encontrado == null)
+            {
+                Console.WriteLine("Produto não encontrado");
+                continue;
+            }
+            Console.WriteLine("Produto encontrado");
+            MostrarProdutos(encontrado);
+
+            while (true)
+            {
+                try {
+                    Console.WriteLine("Digite a quantidade que deseja dar saida:");
+                    bool quantidadeValida = int.TryParse(
+                        Console.ReadLine(),
+                        out int quantidadeAlterada
+                        );
+                    if (!quantidadeValida)
+                    {
+                        Console.WriteLine("Digite uma quantidade validade");
+                        continue;
+                    }
+                    int estoqueNovo = SubtrairSaidaEstoque(encontrado, quantidadeAlterada);
+
+                    Console.WriteLine($"O estoque novo é de {estoqueNovo}");
+                    break;
+                }
+                catch(ArgumentException)
+                {
+                    Console.WriteLine("A quantidade da saida deve ser maior que zero");
+                }
+                catch(InvalidOperationException)
+                {
+                    Console.WriteLine("Não pode ser feito esta operação, o estoque ficará negativo");
+                }
+            }
+            break;
+        }
+
+    }
+
+
+
+
+    //static bool PesquisaCodProd
 
     //Método principal ----------------------------------------
     static void Main(string[] args)
@@ -291,7 +405,7 @@ class Program
                     Console.WriteLine("Não tem produtos para buscar");
 
                 }
-                else 
+                else
                 {
 
                     while (true)
@@ -354,73 +468,16 @@ class Program
                 ResumoCadastro(produtos);
             }
 
-            //Entrada de Estoque
-            else if(opcao == 5) 
+            //Entrada de estoque
+            else if (opcao == 5)
             {
-                if (produtos.Count <= 0) 
-                {
-                    Console.WriteLine("Não tem produtos para ser alterado!");
-                }
-                else
-                {
-                    while (true)
-                    {
-                        Console.WriteLine("Digite o código do produto que deseja alterar:");
-                        bool codigoValido = int.TryParse(
-                            Console.ReadLine(),
-                            out int codigoBusca
-                            );
+                EntradaEstoque(produtos);
+            }
 
-                        if (codigoValido)
-                        {
-                            Produto? encontrado = BuscarProduto(produtos, codigoBusca);
-
-                            if (encontrado != null)
-                            {
-                                Console.WriteLine("Produto encontrado");
-                                MostrarProdutos(encontrado);
-
-                                while (true)
-                                {
-                                    Console.WriteLine("Quanto voce deseja somar ao estoque");
-                                    bool quantidadeValida = int.TryParse(
-                                    Console.ReadLine(),
-                                    out int quantidadeAlterada
-                                    );
-
-                                    if (quantidadeValida && quantidadeAlterada > 0)
-                                    {
-                                        int estoqueNovo = EntradaEstoque(encontrado, quantidadeAlterada);
-                                        Console.WriteLine($"O estoque nove é: {estoqueNovo}");
-                                        break;
-                                    }
-                                    else if (quantidadeAlterada <= 0)
-                                    {
-                                        Console.WriteLine("Não é possivel adicionar 0 ou negativo ao estoque");
-                                        continue;
-                                    }
-                                    
-                                    else
-                                    {
-                                        Console.WriteLine("Escreva um valor valido");
-                                    }
-                                    continue;
-                                }
-                            
-                            }
-                            else
-                            {
-                                Console.WriteLine("Produto nao encontrado");
-                                continue;
-                            }
-                        }
-                        else
-                        {
-                            Console.WriteLine("Digite um código válido");
-                            continue;
-                        }                        
-                    }
-                }
+            //Saida de estoque
+            else if (opcao == 6)
+            {
+                SaidaEstoque(produtos);
             }
 
             //retorna menu 
