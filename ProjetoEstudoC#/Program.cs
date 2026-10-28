@@ -103,6 +103,32 @@ class Program
         Console.WriteLine($"Estoque: {produto.Estoque}");
     }
 
+    static void ListarProdutosBanco()
+    {
+        using (NpgsqlConnection conexao = CriarConexao())
+        {
+            conexao.Open();
+            string comando = "SELECT codigo, nome, preco, estoque FROM PRODUTOS";
+
+            using (NpgsqlCommand comandoExecutado = new NpgsqlCommand(comando, conexao))
+            {
+                using (NpgsqlDataReader leitor = comandoExecutado.ExecuteReader())
+                {
+                    while (leitor.Read())
+                    {
+                        int codigo = leitor.GetInt32(0);
+                        string nome = leitor.GetString(1);
+                        decimal preco = leitor.GetDecimal(2);
+                        int estoque = leitor.GetInt32(3);
+                        Produto produto = new Produto(codigo, nome, preco, estoque);
+                        MostrarProdutos(produto);
+                    }
+                }
+            }
+
+        }
+    }
+
     static decimal ValorEstoqueProduto(Produto produto)
     {
         return produto.Preco * produto.Estoque;
@@ -209,7 +235,29 @@ class Program
             break;
         }
         Produto produto = new Produto(codigo, nome, preco, estoque);
-        produtos.Add(produto);
+        CadastrarProdutoBanco(produto);
+        produtos.Add(produto);        
+    }
+
+    static void CadastrarProdutoBanco(Produto produto)
+    {
+        using (NpgsqlConnection conexao = CriarConexao())
+        {
+            conexao.Open();
+
+            string comando = "INSERT INTO PRODUTOS(codigo, nome, preco, estoque) VALUES (@codigo, @nome, @preco, @estoque)";
+
+            using (NpgsqlCommand comandoExecutado =
+                new NpgsqlCommand(comando, conexao))
+            {
+                comandoExecutado.Parameters.AddWithValue("@codigo", produto.Codigo);
+                comandoExecutado.Parameters.AddWithValue("@nome", produto.Nome);
+                comandoExecutado.Parameters.AddWithValue("@preco", produto.Preco);
+                comandoExecutado.Parameters.AddWithValue("@estoque", produto.Estoque);
+
+                comandoExecutado.ExecuteNonQuery();
+            }
+        }
     }
 
     static void CadastrarProdutoBanco(Produto produto)
@@ -235,6 +283,39 @@ class Program
             }
         }
         return null;
+    }
+
+    static Produto? BuscarProdutoBanco(int codigo)
+    {
+        using (NpgsqlConnection conexao = CriarConexao())
+        {
+            conexao.Open();
+
+            string comando = "SELECT codigo, nome, preco, estoque FROM PRODUTOS WHERE codigo = @codigo";
+            
+            using (NpgsqlCommand comandoExecutado = new NpgsqlCommand(comando, conexao))
+            {
+                comandoExecutado.Parameters.AddWithValue("@codigo", codigo);
+                using (NpgsqlDataReader leitor = comandoExecutado.ExecuteReader())
+                {
+                    if (leitor.Read())
+                    {
+                        int codigoProduto = leitor.GetInt32(0);
+                        string nome = leitor.GetString(1);
+                        decimal preco = leitor.GetDecimal(2);
+                        int estoque = leitor.GetInt32(3);
+
+                        return new Produto(codigoProduto, nome, preco, estoque);
+                    }
+                }
+                   
+            }
+        }
+        else
+        {
+            return null;
+        }
+
     }
 
     static void ResumoCadastro(List<Produto> produtos)
@@ -445,7 +526,7 @@ class Program
             // busca de produto
             else if (opcao == 2)
             {
-                if (produtos.Count <= 0)
+                if (BuscarProdutoBanco(codigoBusca) == null)
                 {
                     Console.WriteLine("Não tem produtos para buscar");
 
@@ -465,7 +546,7 @@ class Program
 
                         if (codigoValido)
                         {
-                            Produto? encontrado = BuscarProduto(produtos, codigoBusca);
+                            Produto? encontrado = BuscarProdutoBanco(codigoBusca);
 
                             if (encontrado != null)
                             {
@@ -491,20 +572,8 @@ class Program
             //listar produtos
             else if (opcao == 3)
             {
-                if (produtos.Count <= 0)
-                {
-                    Console.WriteLine("Não tem produtos");
-                }
-                else
-                {
-                    Console.WriteLine("Dados dos seus produtos:");
 
-                    foreach (Produto item in produtos)
-                    {
-                        MostrarProdutos(item);
-                    }
-
-                }
+                ListarProdutosBanco();
             }
 
             //Resumo do cadastro
