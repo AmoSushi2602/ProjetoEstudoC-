@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Npgsql;
 
 class Produto
 {
@@ -22,6 +23,32 @@ class Produto
 class Program
 {
     //Métodos
+
+    //criar dados da conexão
+    static readonly string connectionString =
+        "Host = localhost;Port = 5432;Database = sistema_estoque;Username = postgres;Password = SOEUSEI;";
+
+    static NpgsqlConnection CriarConexao()
+    {
+        return new NpgsqlConnection(connectionString);
+    }
+
+    static void ConexaoSQL()
+    {
+        try
+        {
+            using (NpgsqlConnection conexao = CriarConexao())
+            {
+                conexao.Open();
+
+                Console.WriteLine("Conexão com o banco realizada");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro na conexão: {ex.Message}");
+        }
+    }
 
     static void Saudacoes()
     {
@@ -185,6 +212,19 @@ class Program
         produtos.Add(produto);
     }
 
+    static void CadastrarProdutoBanco(Produto produto)
+    {
+        NpgsqlConnection conexao = CriarConexao();
+        conexao.Open();
+
+        string comando = "INSERT INTO PRODUTOS VALUES (@codigo, @nome, @preco, @estoque )";
+
+        NpgsqlCommand comandoExecutado = new NpgsqlCommand(comando, conexao);
+
+        @codigo = produto.Codigo
+       comandoExecutado.ExecuteNonQuery();
+    }
+
     static Produto? BuscarProduto(List<Produto> produtos, int codigo)
     {
         foreach (Produto item in produtos)
@@ -231,6 +271,7 @@ class Program
         }
     }
 
+
     static int AdicionarEntradaEstoque(Produto produto, int quantidade)
     {
         produto.Estoque += quantidade;
@@ -245,8 +286,8 @@ class Program
             Console.WriteLine("Não tem produtos para ser alterado!");
             return;
         }
-       
-    
+
+
         while (true)
         {
 
@@ -310,13 +351,13 @@ class Program
 
     static void SaidaEstoque(List<Produto> produtos)
     {
-        if(produtos.Count <= 0)
+        if (produtos.Count <= 0)
         {
             Console.WriteLine("Não tem produtos para dar saida");
             return;
         }
 
-        while(true)
+        while (true)
         {
             Console.WriteLine("Digite o código do produto que deseja dar saida");
             bool codigoValido = int.TryParse(
@@ -329,7 +370,7 @@ class Program
                 continue;
             }
             Produto? encontrado = BuscarProduto(produtos, codigoBusca);
-            if(encontrado == null)
+            if (encontrado == null)
             {
                 Console.WriteLine("Produto não encontrado");
                 continue;
@@ -339,7 +380,8 @@ class Program
 
             while (true)
             {
-                try {
+                try
+                {
                     Console.WriteLine("Digite a quantidade que deseja dar saida:");
                     bool quantidadeValida = int.TryParse(
                         Console.ReadLine(),
@@ -355,11 +397,11 @@ class Program
                     Console.WriteLine($"O estoque novo é de {estoqueNovo}");
                     break;
                 }
-                catch(ArgumentException)
+                catch (ArgumentException)
                 {
                     Console.WriteLine("A quantidade da saida deve ser maior que zero");
                 }
-                catch(InvalidOperationException)
+                catch (InvalidOperationException)
                 {
                     Console.WriteLine("Não pode ser feito esta operação, o estoque ficará negativo");
                 }
@@ -377,6 +419,9 @@ class Program
     //Método principal ----------------------------------------
     static void Main(string[] args)
     {
+        //Tenta conectar no banco
+        ConexaoSQL();
+
         //Inicia o programa com as saudações
         Saudacoes();
 
