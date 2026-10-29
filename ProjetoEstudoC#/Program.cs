@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Npgsql;
 
 class Produto
 {
@@ -23,32 +22,6 @@ class Produto
 class Program
 {
     //Métodos
-
-    //criar dados da conexão
-    static readonly string connectionString =
-        "Host = localhost;Port = 5432;Database = sistema_estoque;Username = postgres;Password = SOEUSEI;";
-
-    static NpgsqlConnection CriarConexao()
-    {
-        return new NpgsqlConnection(connectionString);
-    }
-
-    static void ConexaoSQL()
-    {
-        try
-        {
-            using (NpgsqlConnection conexao = CriarConexao())
-            {
-                conexao.Open();
-
-                Console.WriteLine("Conexão com o banco realizada");
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Erro na conexão: {ex.Message}");
-        }
-    }
 
     static void Saudacoes()
     {
@@ -101,32 +74,6 @@ class Program
         Console.WriteLine($"Nome: {produto.Nome}");
         Console.WriteLine($"Preço: {produto.Preco:F2}");
         Console.WriteLine($"Estoque: {produto.Estoque}");
-    }
-
-    static void ListarProdutosBanco()
-    {
-        using (NpgsqlConnection conexao = CriarConexao())
-        {
-            conexao.Open();
-            string comando = "SELECT codigo, nome, preco, estoque FROM PRODUTOS";
-
-            using (NpgsqlCommand comandoExecutado = new NpgsqlCommand(comando, conexao))
-            {
-                using (NpgsqlDataReader leitor = comandoExecutado.ExecuteReader())
-                {
-                    while (leitor.Read())
-                    {
-                        int codigo = leitor.GetInt32(0);
-                        string nome = leitor.GetString(1);
-                        decimal preco = leitor.GetDecimal(2);
-                        int estoque = leitor.GetInt32(3);
-                        Produto produto = new Produto(codigo, nome, preco, estoque);
-                        MostrarProdutos(produto);
-                    }
-                }
-            }
-
-        }
     }
 
     static decimal ValorEstoqueProduto(Produto produto)
@@ -235,29 +182,7 @@ class Program
             break;
         }
         Produto produto = new Produto(codigo, nome, preco, estoque);
-        CadastrarProdutoBanco(produto);
-        produtos.Add(produto);        
-    }
-
-    static void CadastrarProdutoBanco(Produto produto)
-    {
-        using (NpgsqlConnection conexao = CriarConexao())
-        {
-            conexao.Open();
-
-            string comando = "INSERT INTO PRODUTOS(codigo, nome, preco, estoque) VALUES (@codigo, @nome, @preco, @estoque)";
-
-            using (NpgsqlCommand comandoExecutado =
-                new NpgsqlCommand(comando, conexao))
-            {
-                comandoExecutado.Parameters.AddWithValue("@codigo", produto.Codigo);
-                comandoExecutado.Parameters.AddWithValue("@nome", produto.Nome);
-                comandoExecutado.Parameters.AddWithValue("@preco", produto.Preco);
-                comandoExecutado.Parameters.AddWithValue("@estoque", produto.Estoque);
-
-                comandoExecutado.ExecuteNonQuery();
-            }
-        }
+        produtos.Add(produto);
     }
 
     static void CadastrarProdutoBanco(Produto produto)
@@ -283,39 +208,6 @@ class Program
             }
         }
         return null;
-    }
-
-    static Produto? BuscarProdutoBanco(int codigo)
-    {
-        using (NpgsqlConnection conexao = CriarConexao())
-        {
-            conexao.Open();
-
-            string comando = "SELECT codigo, nome, preco, estoque FROM PRODUTOS WHERE codigo = @codigo";
-            
-            using (NpgsqlCommand comandoExecutado = new NpgsqlCommand(comando, conexao))
-            {
-                comandoExecutado.Parameters.AddWithValue("@codigo", codigo);
-                using (NpgsqlDataReader leitor = comandoExecutado.ExecuteReader())
-                {
-                    if (leitor.Read())
-                    {
-                        int codigoProduto = leitor.GetInt32(0);
-                        string nome = leitor.GetString(1);
-                        decimal preco = leitor.GetDecimal(2);
-                        int estoque = leitor.GetInt32(3);
-
-                        return new Produto(codigoProduto, nome, preco, estoque);
-                    }
-                }
-                   
-            }
-        }
-        else
-        {
-            return null;
-        }
-
     }
 
     static void ResumoCadastro(List<Produto> produtos)
@@ -367,8 +259,8 @@ class Program
             Console.WriteLine("Não tem produtos para ser alterado!");
             return;
         }
-
-
+       
+    
         while (true)
         {
 
@@ -432,13 +324,13 @@ class Program
 
     static void SaidaEstoque(List<Produto> produtos)
     {
-        if (produtos.Count <= 0)
+        if(produtos.Count <= 0)
         {
             Console.WriteLine("Não tem produtos para dar saida");
             return;
         }
 
-        while (true)
+        while(true)
         {
             Console.WriteLine("Digite o código do produto que deseja dar saida");
             bool codigoValido = int.TryParse(
@@ -451,7 +343,7 @@ class Program
                 continue;
             }
             Produto? encontrado = BuscarProduto(produtos, codigoBusca);
-            if (encontrado == null)
+            if(encontrado == null)
             {
                 Console.WriteLine("Produto não encontrado");
                 continue;
@@ -461,8 +353,7 @@ class Program
 
             while (true)
             {
-                try
-                {
+                try {
                     Console.WriteLine("Digite a quantidade que deseja dar saida:");
                     bool quantidadeValida = int.TryParse(
                         Console.ReadLine(),
@@ -478,11 +369,11 @@ class Program
                     Console.WriteLine($"O estoque novo é de {estoqueNovo}");
                     break;
                 }
-                catch (ArgumentException)
+                catch(ArgumentException)
                 {
                     Console.WriteLine("A quantidade da saida deve ser maior que zero");
                 }
-                catch (InvalidOperationException)
+                catch(InvalidOperationException)
                 {
                     Console.WriteLine("Não pode ser feito esta operação, o estoque ficará negativo");
                 }
@@ -500,9 +391,6 @@ class Program
     //Método principal ----------------------------------------
     static void Main(string[] args)
     {
-        //Tenta conectar no banco
-        ConexaoSQL();
-
         //Inicia o programa com as saudações
         Saudacoes();
 
@@ -526,7 +414,7 @@ class Program
             // busca de produto
             else if (opcao == 2)
             {
-                if (BuscarProdutoBanco(codigoBusca) == null)
+                if (produtos.Count <= 0)
                 {
                     Console.WriteLine("Não tem produtos para buscar");
 
@@ -546,7 +434,7 @@ class Program
 
                         if (codigoValido)
                         {
-                            Produto? encontrado = BuscarProdutoBanco(codigoBusca);
+                            Produto? encontrado = BuscarProduto(produtos, codigoBusca);
 
                             if (encontrado != null)
                             {
@@ -572,8 +460,20 @@ class Program
             //listar produtos
             else if (opcao == 3)
             {
+                if (produtos.Count <= 0)
+                {
+                    Console.WriteLine("Não tem produtos");
+                }
+                else
+                {
+                    Console.WriteLine("Dados dos seus produtos:");
 
-                ListarProdutosBanco();
+                    foreach (Produto item in produtos)
+                    {
+                        MostrarProdutos(item);
+                    }
+
+                }
             }
 
             //Resumo do cadastro
