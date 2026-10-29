@@ -298,11 +298,7 @@ class Program
 
             }
         }
-        else
-        {
-            return null;
-        }
-
+        return null;
     }
 
     static void ResumoCadastro(List<Produto> produtos)
@@ -339,25 +335,37 @@ class Program
         }
     }
 
-    static int AdicionarEntradaEstoque(Produto produto, int quantidade)
+    /*static int AdicionarEntradaEstoque(Produto produto, int quantidade)
     {
         produto.Estoque += quantidade;
         return produto.Estoque;
     }
+    */
+    
+    static int AdicionarEntradaEstoqueBanco(Produto produto, int quantidade)
+    {
+        using (NpgsqlConnection conexao = CriarConexao())
+        {
+            conexao.Open();
+
+            string comando = "UPDATE PRODUTOS SET estoque = estoque + @quantidade WHERE codigo = @codigo";
+
+            using (NpgsqlCommand comandoExecutado = new NpgsqlCommand(comando, conexao))
+            {
+                comandoExecutado.Parameters.AddWithValue("@codigo", produto.Codigo);
+                comandoExecutado.Parameters.AddWithValue("@quantidade", quantidade);
+
+
+                return comandoExecutado.ExecuteNonQuery();
+
+            }
+        }
+    }
 
     static void EntradaEstoque(List<Produto> produtos)
     {
-
-        if (produtos.Count <= 0)
-        {
-            Console.WriteLine("Não tem produtos para ser alterado!");
-            return;
-        }
-
-
         while (true)
         {
-
             Console.WriteLine("Digite o código do produto que deseja alterar:");
             bool codigoValido = int.TryParse(
                 Console.ReadLine(),
@@ -369,40 +377,55 @@ class Program
                 Console.WriteLine("Escreva um valor valido");
                 continue;
             }
-
-            Produto? encontrado = BuscarProduto(produtos, codigoBusca);
-            if (encontrado == null)
+            else
             {
-                Console.WriteLine("Produto não encontrado");
-                continue;
-            }
-
-            Console.WriteLine("Produto encontrado:");
-            MostrarProdutos(encontrado);
-
-            while (true)
-            {
-                Console.WriteLine("Quanto deseja adicionar ao estoque?");
-                bool quantidadeValida = int.TryParse(
-                    Console.ReadLine(),
-                    out int quantidadeAlterada
-                );
-
-                if (!quantidadeValida || quantidadeAlterada <= 0)
+                Produto? encontrado = BuscarProdutoBanco(codigoBusca);
+                if (encontrado == null)
                 {
-                    Console.WriteLine("Digite um valor inteiro maior que zero");
+                    Console.WriteLine("Produto não encontrado");
                     continue;
                 }
+                while (true)
+                {
+                    Console.WriteLine("Quanto deseja adicionar ao estoque?");
+                    bool quantidadeValida = int.TryParse(
+                    Console.ReadLine(),
+                    out int quantidadeAlterada);
 
-                int estoqueNovo = AdicionarEntradaEstoque(encontrado, quantidadeAlterada);
-                Console.WriteLine($"O Estoque novo é de :{estoqueNovo} ");
-                break;
+                    if (!quantidadeValida || quantidadeAlterada <= 0)
+                    {
+                        Console.WriteLine("Digite um valor inteiro maior que zero");
+                        continue;
+                    }
+                    int linhasAfetadas = AdicionarEntradaEstoqueBanco(encontrado, quantidadeAlterada);
+
+                    if (linhasAfetadas >= 1)
+                    {
+
+                        Produto? estoqueNovo = BuscarProdutoBanco(codigoBusca);
+
+                        if (estoqueNovo != null)
+                        {
+                            Console.WriteLine($"O Estoque novo é de :{estoqueNovo.Estoque}");
+                        }
+                        else
+                        {
+                            Console.WriteLine("Não encontrado");
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine("Não foi alterado nenhum produto!");
+                    }
+                    break;
+                }
             }
-            break;
+
         }
     }
 
-    static int SubtrairSaidaEstoque(Produto produto, int quantidade)
+
+    /*static int SubtrairSaidaEstoque(Produto produto, int quantidade)
     {
         if (quantidade <= 0)
         {
@@ -414,16 +437,30 @@ class Program
         }
         produto.Estoque -= quantidade;
         return produto.Estoque;
+    }*/
+
+    static int SubtrairSaidaEstoqueBanco(Produto produto, int quantidade)
+    {
+        using(NpgsqlConnection conexao = CriarConexao())
+        {
+            conexao.Open();
+
+            string comando = "UPDATE PRDUTOS SET estoque = estoque - @quantidade WHERE codigo = @codigo";
+
+            using (NpgsqlCommand comandoExecutado = new NpgsqlCommand(comando, conexao))
+            {
+                comandoExecutado.Parameters.AddWithValue("@codigo", produto.Codigo);
+                comandoExecutado.Parameters.AddWithValue("@quantidade", quantidade);
+
+
+                return comandoExecutado.ExecuteNonQuery();
+            }
+        }
+
     }
 
     static void SaidaEstoque(List<Produto> produtos)
     {
-        if (produtos.Count <= 0)
-        {
-            Console.WriteLine("Não tem produtos para dar saida");
-            return;
-        }
-
         while (true)
         {
             Console.WriteLine("Digite o código do produto que deseja dar saida");
@@ -436,42 +473,36 @@ class Program
                 Console.WriteLine("Escreva um código válido");
                 continue;
             }
-            Produto? encontrado = BuscarProduto(produtos, codigoBusca);
+            Produto? encontrado = BuscarProdutoBanco(codigoBusca);
             if (encontrado == null)
             {
                 Console.WriteLine("Produto não encontrado");
                 continue;
             }
-            Console.WriteLine("Produto encontrado");
-            MostrarProdutos(encontrado);
-
             while (true)
             {
-                try
+                Console.WriteLine("Digite a quantidade que deseja dar saida:");
+                bool quantidadeValida = int.TryParse(
+                    Console.ReadLine(),
+                    out int quantidadeAlterada
+                    );
+                Produto? quantidadeEstoque = BuscarProdutoBanco(codigoBusca);
+                if (!quantidadeValida)
                 {
-                    Console.WriteLine("Digite a quantidade que deseja dar saida:");
-                    bool quantidadeValida = int.TryParse(
-                        Console.ReadLine(),
-                        out int quantidadeAlterada
-                        );
-                    if (!quantidadeValida)
-                    {
-                        Console.WriteLine("Digite uma quantidade validade");
-                        continue;
-                    }
-                    int estoqueNovo = SubtrairSaidaEstoque(encontrado, quantidadeAlterada);
+                    Console.WriteLine("Digite uma quantidade validade");
+                    continue;
+                }
+                else if (quantidadeAlterada > quantidadeEstoque.Estoque)
+                {
+                    Console.WriteLine("Voce não pode dar saida maior do que você tem de entrada");
+                    Console.WriteLine($"Voce tem de estoque{quantidadeEstoque.Estoque}");
+                    continue;
+                }
+                int estoqueNovo = SubtrairSaidaEstoqueBanco(encontrado, quantidadeAlterada);
 
-                    Console.WriteLine($"O estoque novo é de {estoqueNovo}");
-                    break;
-                }
-                catch (ArgumentException)
-                {
-                    Console.WriteLine("A quantidade da saida deve ser maior que zero");
-                }
-                catch (InvalidOperationException)
-                {
-                    Console.WriteLine("Não pode ser feito esta operação, o estoque ficará negativo");
-                }
+                Console.WriteLine($"O estoque novo é de {estoqueNovo.Estoque}");
+                break;
+                
             }
             break;
         }
@@ -479,109 +510,93 @@ class Program
     }
 
 
+        //static bool PesquisaCodProd
 
-
-    //static bool PesquisaCodProd
-
-    //Método principal ----------------------------------------
-    static void Main(string[] args)
-    {
-        //Tenta conectar no banco
-        ConexaoSQL();
-
-        //Inicia o programa com as saudações
-        Saudacoes();
-
-        List<Produto> produtos = new List<Produto>();
-
-        int opcao = Opcoes();
-
-
-        while (opcao != 0)
+        //Método principal ----------------------------------------
+        static void Main(string[] args)
         {
+            //Tenta conectar no banco
+            ConexaoSQL();
 
-            //Loop de cadastro
-            if (opcao == 1)
+            //Inicia o programa com as saudações
+            Saudacoes();
+
+            List<Produto> produtos = new List<Produto>();
+
+            int opcao = Opcoes();
+
+
+            while (opcao != 0)
             {
-                CadastrarProduto(produtos);
 
-                Console.WriteLine("Criado com sucesso!");
-
-            }
-
-            // busca de produto
-            else if (opcao == 2)
-            {
-                if (BuscarProdutoBanco(codigoBusca) == null)
+                //Loop de cadastro
+                if (opcao == 1)
                 {
-                    Console.WriteLine("Não tem produtos para buscar");
+                    CadastrarProduto(produtos);
+
+                    Console.WriteLine("Criado com sucesso!");
 
                 }
-                else
+
+                // busca de produto
+                else if (opcao == 2)
                 {
 
-                    while (true)
+                    Console.WriteLine("Digite o código do produto que deseja buscar: ");
+
+                    bool codigoValido = int.TryParse(
+                        Console.ReadLine(),
+                        out int codigoBusca
+                    );
+
+                    if (!codigoValido)
                     {
+                        Console.WriteLine("Código invalido");
+                    }
+                    else
+                    {
+                        Produto? encontrado = BuscarProdutoBanco(codigoBusca);
 
-                        Console.WriteLine("Digite o código do produto que deseja buscar: ");
-
-                        bool codigoValido = int.TryParse(
-                            Console.ReadLine(),
-                            out int codigoBusca
-                        );
-
-                        if (codigoValido)
+                        if (encontrado != null)
                         {
-                            Produto? encontrado = BuscarProdutoBanco(codigoBusca);
-
-                            if (encontrado != null)
-                            {
-                                Console.WriteLine("Produto encontrado!");
-                                MostrarProdutos(encontrado);
-                                break;
-                            }
-                            else
-                            {
-                                Console.WriteLine("Produto não encontrado");
-                                continue;
-                            }
+                            Console.WriteLine("Produto encontrado!");
+                            MostrarProdutos(encontrado);
                         }
                         else
                         {
-                            Console.WriteLine("Código invalido");
-                            continue;
+                            Console.WriteLine("Produto não encontrado");
                         }
                     }
+
                 }
+
+                //listar produtos
+                else if (opcao == 3)
+                {
+
+                    ListarProdutosBanco();
+                }
+
+                //Resumo do cadastro
+                else if (opcao == 4)
+                {
+                    ResumoCadastro(produtos);
+                }
+
+                //Entrada de estoque
+                else if (opcao == 5)
+                {
+                    EntradaEstoque(produtos);
+                }
+
+                //Saida de estoque
+                else if (opcao == 6)
+                {
+                    SaidaEstoque(produtos);
+                }
+
+                //retorna menu 
+                opcao = Opcoes();
             }
-
-            //listar produtos
-            else if (opcao == 3)
-            {
-
-                ListarProdutosBanco();
-            }
-
-            //Resumo do cadastro
-            else if (opcao == 4)
-            {
-                ResumoCadastro(produtos);
-            }
-
-            //Entrada de estoque
-            else if (opcao == 5)
-            {
-                EntradaEstoque(produtos);
-            }
-
-            //Saida de estoque
-            else if (opcao == 6)
-            {
-                SaidaEstoque(produtos);
-            }
-
-            //retorna menu 
-            opcao = Opcoes();
         }
     }
-}
