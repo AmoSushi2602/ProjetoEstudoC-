@@ -445,7 +445,7 @@ class Program
         {
             conexao.Open();
 
-            string comando = "UPDATE PRDUTOS SET estoque = estoque - @quantidade WHERE codigo = @codigo";
+            string comando = "UPDATE PRODUTOS SET estoque = estoque - @quantidade WHERE codigo = @codigo and estoque >= @quantidade" ;
 
             using (NpgsqlCommand comandoExecutado = new NpgsqlCommand(comando, conexao))
             {
@@ -492,22 +492,39 @@ class Program
                     Console.WriteLine("Digite uma quantidade validade");
                     continue;
                 }
-                else if (quantidadeAlterada > quantidadeEstoque.Estoque)
+                else if (quantidadeAlterada <= 0)
                 {
                     Console.WriteLine("Voce não pode dar saida maior do que você tem de entrada");
                     Console.WriteLine($"Voce tem de estoque{quantidadeEstoque.Estoque}");
                     continue;
                 }
-                int estoqueNovo = SubtrairSaidaEstoqueBanco(encontrado, quantidadeAlterada);
+                int mudouProduto = SubtrairSaidaEstoqueBanco(encontrado, quantidadeAlterada);
 
-                Console.WriteLine($"O estoque novo é de {estoqueNovo.Estoque}");
-                break;
+                if (mudouProduto > 0)
+                {
+                    Produto? estoqueNovo = BuscarProdutoBanco(codigoBusca);
+                    if (estoqueNovo != null)
+                    {
+                        Console.WriteLine($"O estoque novo é de {estoqueNovo.Estoque}");
+                        break;
+                    }
+                    else
+                    {
+                        Console.WriteLine("Não teve estoque alterado");
+                        continue;
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("Não teve nenhum produto alterado");
+                    break;
+                }
                 
             }
             break;
         }
-
     }
+
 
 
         //static bool PesquisaCodProd
